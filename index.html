@@ -805,52 +805,6 @@
             }, 200);
         });
 
-// --- DEBUG: TEMPORARY LEVEL SWITCHER ---
-        // DELETE THIS SECTION BEFORE SENDING THE GIFT!
-        (function createDebugSwitcher() {
-            const container = document.createElement('div');
-            Object.assign(container.style, {
-                position: 'fixed',
-                bottom: '10px',
-                right: '10px',
-                zIndex: '10000',
-                background: 'rgba(255, 255, 255, 0.9)',
-                padding: '10px',
-                border: '2px solid red',
-                fontFamily: 'sans-serif',
-                fontSize: '12px',
-                boxShadow: '0 0 10px rgba(0,0,0,0.5)'
-            });
-
-            const label = document.createElement('div');
-            label.innerText = "🚧 DEBUG LEVEL JUMP 🚧";
-            label.style.marginBottom = "5px";
-            label.style.fontWeight = "bold";
-            label.style.color = "red";
-            label.style.textAlign = "center";
-            container.appendChild(label);
-
-            const select = document.createElement('select');
-            select.style.width = "100%";
-            
-            levels.forEach((lvl, index) => {
-                const opt = document.createElement('option');
-                opt.value = index;
-                opt.text = `${index + 1}. ${lvl.name.split(' ')[0]}...`; // Shortens name
-                if (index === currentLevelIdx) opt.selected = true;
-                select.appendChild(opt);
-            });
-
-            select.onchange = (e) => {
-                // Close modal if open so it doesn't block the new level
-                document.getElementById('plaque-modal').style.display = 'none';
-                initLevel(parseInt(e.target.value));
-            };
-
-            container.appendChild(select);
-            document.body.appendChild(container);
-        })();
-
     </script>
 </body>
 </html>
