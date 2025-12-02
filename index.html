@@ -432,6 +432,27 @@
                     // Tail
                     { id: 'f-tail', path: 'M10,10 Q50,-10 120,20 L120,30 Q50,0 10,20 Z', w: 130, h: 40, tx: 80, ty: 20 },
                 ]
+            },
+            {
+                name: "PROG!!!",
+                location: "Excavation Site: The Progressive Pool",
+                desc: "A perfectly preserved amphibian from a faraway land. Note the specialized 'spring' mechanism in the hind tibiofibula, suggesting this creature could leap over entire timelines.",
+                stats: "<span>ERA: Modern Times?</span><span>TYPE: Amphibian</span>",
+                imgUrl: "./assets/prog.jpg",
+                parts: [
+                    // Skull: Broad and flat with eye sockets
+                    { id: 'frog-skull', path: 'M10,30 Q20,5 50,5 Q80,5 90,30 Q95,45 80,55 Q50,65 20,55 Q5,45 10,30 Z M20,30 Q25,20 35,25 M65,25 Q75,20 80,30', w: 100, h: 70, tx: 0, ty: -60 },
+                    // Spine & Pelvis: Short spine, distinct V-shape pelvis
+                    { id: 'frog-spine', path: 'M45,10 L55,10 L52,40 L75,60 L25,60 L48,40 Z', w: 100, h: 70, tx: 0, ty: 10 },
+                    // Front Left Arm: Small and bent
+                    { id: 'frog-armL', path: 'M50,10 L30,20 L20,40 M30,20 L10,25', w: 60, h: 50, tx: -40, ty: -20 },
+                    // Front Right Arm: Mirror
+                    { id: 'frog-armR', path: 'M10,10 L30,20 L40,40 M30,20 L50,25', w: 60, h: 50, tx: 40, ty: -20 },
+                    // Hind Leg Left: Big Z-fold jumping leg
+                    { id: 'frog-legL', path: 'M90,10 Q50,0 20,30 L10,80 L30,90 M20,30 L40,40', w: 100, h: 100, tx: -60, ty: 50 },
+                    // Hind Leg Right: Mirror
+                    { id: 'frog-legR', path: 'M10,10 Q50,0 80,30 L90,80 L70,90 M80,30 L60,40', w: 100, h: 100, tx: 60, ty: 50 },
+                ]
             }
         ];
 
@@ -734,10 +755,18 @@
             });
             
             const btn = document.getElementById('next-level-btn');
-            if (currentLevelIdx < levels.length - 1) {
-                btn.innerText = "Excavate Next Specimen";
-            } else {
+            
+            // 1. If we are currently on the last level -> Restart
+            if (currentLevelIdx >= levels.length - 1) {
                 btn.innerText = "Restart Exhibition";
+            } 
+            // 2. If the NEXT level is the Bonus Round -> Special Text
+            else if (levels[currentLevelIdx + 1].name.includes("PROG")) {
+                btn.innerText = "Excavate BONUS ROUND!";
+            } 
+            // 3. Otherwise -> Standard Text
+            else {
+                btn.innerText = "Excavate Next Specimen";
             }
             
             plaqueModal.style.display = 'flex';
