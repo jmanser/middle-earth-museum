@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paleontology Dept: Erebor Excavation</title>
+    <style>
+        /* --- RESET & BASE STYLES --- */
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f4e4bc; /* Parchment color */
+            font-family: 'Courier New', Courier, monospace;
+            color: #3e3e3e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- UI ELEMENTS --- */
+        header {
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        h1 {
+            margin-top: 1rem;
+            font-size: 1.4rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 2px solid #3e3e3e;
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.2rem;
+        }
+        .subtitle {
+            font-size: 0.8rem;
+            font-style: italic;
+        }
+
+        /* --- TOOLBAR --- */
+        #toolbar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            background: #fff;
+            padding: 0.5rem;
+            border: 2px solid #3e3e3e;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+            z-index: 2000;
+        }
+        .tool-btn {
+            padding: 8px 16px;
+            border: 2px solid #3e3e3e;
+            background: #f4e4bc;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.1s;
+        }
+        .tool-btn.active {
+            background: #3e3e3e;
+            color: #f4e4bc;
+            transform: translateY(2px);
+        }
+        .controls-hint {
+            font-size: 0.7rem;
+            color: #666;
+            margin-left: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        /* --- GAME CONTAINER --- */
+        #game-area {
+            display: flex;
+            width: 95vw;
+            max-width: 1100px;
+            height: 70vh;
+            border: 4px double #3e3e3e;
+            background: #fff;
+            position: relative;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
+        }
+
+        /* --- LEFT: EXCAVATION SITE (DIRT) --- */
+        #dig-site {
+            width: 45%;
+            position: relative;
+            border-right: 2px dashed #3e3e3e;
+            overflow: hidden;
+            background-color: #cba076; 
+            background-image: radial-gradient(#b08d66 15%, transparent 16%);
+            background-size: 20px 20px;
+            z-index: 1; /* Low base z-index */
+        }
+        
+        /* The Canvas sits ON TOP of the bones initially */
+        #dirt-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 50; /* Above bones when they are 'hidden' inside dig-site */
+            cursor: crosshair;
+            touch-action: none;
+        }
+        
+        /* When HAND tool is active, pass clicks through */
+        #dig-site.tool-hand #dirt-canvas {
+            pointer-events: none;
+        }
+
+        .label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #3e3e3e;
+            color: #f4e4bc;
+            padding: 4px 8px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        /* --- RIGHT: MUSEUM MOUNT (PAPER) --- */
+        #museum-mount {
+            width: 55%;
+            background-color: #fdfbf7;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            z-index: 1;
+        }
+        #museum-mount::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: linear-gradient(#e5e5e5 1px, transparent 1px), linear-gradient(90deg, #e5e5e5 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 0;
+        }
+
+        /* --- THE BONES --- */
+        .bone {
+            position: absolute;
+            cursor: grab;
+            filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.3));
+            transition: transform 0.1s linear; 
+            z-index: 10; /* Initial Z-Index */
+            width: 100px; 
+            touch-action: none;
+        }
+        
+        /* When dragging or moved to game-area, use high Z-Index to stay above Dirt Canvas */
+        #game-area > .bone {
+            z-index: 100; 
+        }
+
+        .bone:active {
+            cursor: grabbing;
+            z-index: 999 !important; /* Always on top when holding */
+        }
+        
+        .bone svg {
+            width: 100%;
+            height: 100%;
+            fill: #fdfbf7; 
+            stroke: #3e3e3e;
+            stroke-width: 2px;
+        }
+        
+        #dig-site.tool-brush .bone {
+            cursor: default;
+        }
+
+        /* --- SLOTS --- */
+        .bone-slot {
+            position: absolute;
+            opacity: 0.2;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .bone-slot svg {
+            fill: #000;
+            stroke: none;
+        }
+
+        /* --- MODAL --- */
+        #plaque-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+        }
+        #plaque {
+            background: #fff;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            border: 8px solid #3e3e3e;
+            text-align: center;
+            box-shadow: 20px 20px 0px rgba(0,0,0,0.5);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        #plaque h2 {
+            font-family: 'Times New Roman', Times, serif;
+            font-style: italic;
+            color: #8b0000;
+            margin-top: 0;
+        }
+        
+        /* New Visual Container for the "Sketch" */
+        #plaque-visual {
+            width: 100%;
+            height: 150px;
+            background: #f4e4bc;
+            border: 2px solid #3e3e3e;
+            margin: 1rem 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        #plaque-visual::after {
+            content: "Fig 1. Artist Reconstruction";
+            position: absolute;
+            bottom: 5px;
+            right: 10px;
+            font-size: 0.6rem;
+            font-style: italic;
+            opacity: 0.7;
+        }
+        #plaque-visual svg {
+            max-height: 80%;
+            max-width: 80%;
+            fill: #3e3e3e; /* Ink color */
+        }
+
+        .stat-block {
+            margin-top: 1rem;
+            border-top: 1px solid #ccc;
+            padding-top: 1rem;
+            display: flex;
+            justify-content: space-around;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .modal-btn {
+            margin-top: 1.5rem;
+            background: #3e3e3e;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-family: inherit;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .modal-btn:hover { background: #555; }
+        
+        /* Confetti */
+        .confetti {
+            position: absolute;
+            width: 10px; height: 10px;
+            background-color: #f00;
+            animation: fall linear forwards;
+            z-index: 4000;
+            pointer-events: none;
+        }
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(720deg); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Royal Paleontology Society</h1>
+        <div class="subtitle" id="level-subtitle">Excavation Site: The Lonely Mountain</div>
+    </header>
+
+    <div id="toolbar">
+        <button class="tool-btn active" id="btn-brush" onclick="setTool('brush')">
+            ⛏️ Brush
+        </button>
+        <button class="tool-btn" id="btn-hand" onclick="setTool('hand')">
+            ✋ Hand
+        </button>
+        <div class="controls-hint">
+            <span>While Dragging: Use <b>A / D</b> or <b>Scroll</b> to Rotate</span>
+        </div>
+    </div>
+
+    <div id="game-area">
+        <!-- LEFT: THE DIRT -->
+        <div id="dig-site" class="tool-brush">
+            <div class="label">EXCAVATION ZONE</div>
+            <!-- Canvas is created in JS to match size -->
+            <!-- Bones injected here -->
+        </div>
+
+        <!-- RIGHT: THE MOUNT -->
+        <div id="museum-mount">
+            <div class="label">ASSEMBLY MOUNT</div>
+            <!-- Slots injected here -->
+        </div>
+    </div>
+
+    <!-- THE REWARD MODAL -->
+    <div id="plaque-modal">
+        <div id="plaque">
+            <h2 id="plaque-title">Specimen Name</h2>
+            <div id="plaque-visual">
+                <!-- SVG injected here -->
+            </div>
+            <p id="plaque-desc">Description goes here.</p>
+            <div class="stat-block" id="plaque-stats">
+                <!-- Stats -->
+            </div>
+            <button class="modal-btn" id="next-level-btn" onclick="nextLevel()">Proceed to Next Dig Site</button>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA: CREATURES ---
+        const levels = [
+            {
+                name: "Smaugus terribilis",
+                location: "Excavation Site: Erebor (The Lonely Mountain)",
+                desc: "Recovered from the treasure hoards of Erebor. Note the heavy armor plating and the distinct lack of a 'missing scale' on the left breast in this reconstruction.",
+                stats: "<span>ERA: Third Age</span><span>TYPE: Fire Drake</span>",
+                // Dragon Silhouette
+                visual: `<svg viewBox="0 0 100 60"><path d="M80,10 Q90,5 95,15 T90,30 L70,40 Q50,60 30,50 Q10,60 5,30 Q10,10 30,20 L50,15 L70,5 L80,10 Z M60,15 L40,5 L20,15 L40,25 Z" /></svg>`,
+                parts: [
+                    { id: 's-head', path: 'M10,20 Q30,5 50,20 T90,30 L80,50 L40,60 Q10,50 10,20 M60,25 Q65,20 70,25 M20,25 L30,25', w: 100, h: 70, tx: 180, ty: -80 },
+                    { id: 's-spine', path: 'M10,20 Q50,0 90,20 Q130,40 170,20 L170,40 Q130,60 90,40 Q50,20 10,40 Z', w: 180, h: 60, tx: 0, ty: 0 },
+                    { id: 's-wingl', path: 'M80,80 Q10,10 5,5 L40,40 Q60,10 90,5 L80,80', w: 100, h: 100, tx: -80, ty: -50 },
+                    { id: 's-wingr', path: 'M10,80 Q80,10 85,5 L50,40 Q30,10 0,5 L10,80', w: 100, h: 100, tx: 80, ty: -50 },
+                    { id: 's-tail', path: 'M10,10 Q50,50 90,10 L90,20 Q50,60 10,20 Z', w: 100, h: 50, tx: 150, ty: 20 },
+                ]
+            },
+            {
+                name: "Mûmakil colossus",
+                location: "Excavation Site: Harad (The Southlands)",
+                desc: "A massive herbivore used as a siege engine. The tusks alone weigh more than a Shire pony. Often adorned with war towers.",
+                stats: "<span>ERA: Third Age</span><span>TYPE: Oliphaunt</span>",
+                // Elephant/Mumakil Silhouette
+                visual: `<svg viewBox="0 0 100 70"><path d="M20,30 Q15,10 30,5 Q50,0 70,5 Q90,10 90,30 L90,60 Q80,70 70,60 L70,30 L30,30 L30,60 Q20,70 10,60 L10,40 Q0,50 5,20 Z M80,25 L95,15 L85,35 Z" /></svg>`,
+                parts: [
+                    { id: 'm-body', path: 'M20,20 Q80,0 140,20 L140,80 Q80,100 20,80 Z', w: 160, h: 100, tx: 0, ty: 0 },
+                    { id: 'm-head', path: 'M10,30 Q30,10 60,30 L60,70 Q30,90 10,70 Z M60,40 L90,20 L90,30 L60,50', w: 100, h: 100, tx: -100, ty: -10 },
+                    { id: 'm-tusk', path: 'M50,10 Q20,40 10,80 L20,80 Q30,40 60,20 Z', w: 70, h: 90, tx: -130, ty: 40 },
+                    { id: 'm-leg1', path: 'M10,10 L40,10 L35,80 L15,80 Z', w: 50, h: 90, tx: -50, ty: 80 },
+                    { id: 'm-leg2', path: 'M10,10 L40,10 L35,80 L15,80 Z', w: 50, h: 90, tx: 50, ty: 80 },
+                ]
+            },
+            {
+                name: "Pterosaur nazgulii",
+                location: "Excavation Site: Minas Morgul",
+                desc: "The fell beast. A winged creature of the older world, bred by Sauron to hunt horses. Its screech is known to cause despair.",
+                stats: "<span>ERA: Second Age</span><span>TYPE: Fell Beast</span>",
+                // Wyvern Silhouette
+                visual: `<svg viewBox="0 0 100 60"><path d="M10,30 Q20,10 40,20 Q60,10 80,5 L90,15 Q70,30 60,25 Q50,40 40,30 Q30,50 10,40 Z M80,10 L95,5 L85,25 Z" /></svg>`,
+                parts: [
+                    { id: 'f-neck', path: 'M10,80 Q30,40 80,10 L90,20 Q40,50 20,90 Z', w: 100, h: 100, tx: -90, ty: -50 },
+                    { id: 'f-skull', path: 'M10,20 L60,10 L60,40 L10,30 Z', w: 70, h: 50, tx: -140, ty: -80 },
+                    { id: 'f-body', path: 'M10,20 Q40,10 70,20 L60,50 Q30,60 0,50 Z', w: 80, h: 60, tx: 0, ty: 0 },
+                    { id: 'f-wingL', path: 'M100,100 L10,10 L50,10 L100,60 Z', w: 110, h: 110, tx: -80, ty: 0 },
+                    { id: 'f-wingR', path: 'M10,100 L100,10 L60,10 L10,60 Z', w: 110, h: 110, tx: 80, ty: 0 },
+                    { id: 'f-tail', path: 'M10,10 Q50,0 120,20 L120,30 Q50,10 10,20 Z', w: 130, h: 40, tx: 80, ty: 20 },
+                ]
+            }
+        ];
+
+        // --- STATE ---
+        let currentLevelIdx = 0;
+        let currentTool = 'brush'; // 'brush' or 'hand'
+        let placedCount = 0;
+        let draggedBone = null; // Currently held bone object
+
+        // --- DOM REFS ---
+        const digSite = document.getElementById('dig-site');
+        const museumMount = document.getElementById('museum-mount');
+        const plaqueModal = document.getElementById('plaque-modal');
+        const brushBtn = document.getElementById('btn-brush');
+        const handBtn = document.getElementById('btn-hand');
+        let dirtCanvas, ctx;
+
+        // --- INIT ---
+        function initLevel(levelIdx) {
+            // Check if DOM is ready with valid sizes
+            if(digSite.offsetWidth === 0) {
+                console.log("Waiting for layout...");
+                setTimeout(() => initLevel(levelIdx), 100);
+                return;
+            }
+
+            // 1. CLEANUP PREVIOUS LEVEL
+            // Remove confetti
+            const confetti = document.querySelectorAll('.confetti');
+            confetti.forEach(c => c.remove());
+            
+            // Remove bones that were placed (moved to game-area)
+            const oldPlacedBones = document.querySelectorAll('#game-area > .bone');
+            oldPlacedBones.forEach(b => b.remove());
+
+            // 2. Reset State
+            currentLevelIdx = levelIdx;
+            placedCount = 0;
+            draggedBone = null;
+            digSite.innerHTML = '<div class="label">EXCAVATION ZONE</div>'; // Clear old bones in dig site
+            museumMount.innerHTML = '<div class="label">ASSEMBLY MOUNT</div>'; // Clear old slots
+            plaqueModal.style.display = 'none';
+
+            // 3. Setup Level Data
+            const level = levels[levelIdx];
+            document.getElementById('level-subtitle').innerText = level.location;
+
+            // 4. Setup Dirt Canvas
+            setupDirt();
+
+            // 5. Setup Bones & Slots
+            const mountRect = museumMount.getBoundingClientRect();
+            const mountCenterX = mountRect.width / 2;
+            const mountCenterY = mountRect.height / 2;
+
+            level.parts.forEach(part => {
+                // Create Slot
+                const slot = document.createElement('div');
+                slot.className = 'bone-slot';
+                slot.style.width = part.w + 'px';
+                slot.style.height = part.h + 'px';
+                slot.style.left = (mountCenterX + part.tx - part.w/2) + 'px';
+                slot.style.top = (mountCenterY + part.ty - part.h/2) + 'px';
+                slot.innerHTML = `<svg viewBox="0 0 ${part.w} ${part.h}"><path d="${part.path}"/></svg>`;
+                museumMount.appendChild(slot);
+
+                // Create Bone
+                const bone = document.createElement('div');
+                bone.className = 'bone';
+                bone.style.width = part.w + 'px';
+                bone.style.height = part.h + 'px';
+                bone.innerHTML = `<svg viewBox="0 0 ${part.w} ${part.h}"><path d="${part.path}"/></svg>`;
+                
+                // Random Pos & Rotation
+                // Ensure max width is positive
+                const maxL = Math.max(10, digSite.offsetWidth - part.w - 20);
+                const maxT = Math.max(10, digSite.offsetHeight - part.h - 20);
+                
+                bone.style.left = (Math.random() * maxL + 10) + 'px';
+                bone.style.top = (Math.random() * maxT + 10) + 'px';
+                
+                const startRot = Math.random() * 360;
+                bone.dataset.rotation = startRot; // Store rotation in dataset
+                bone.style.transform = `rotate(${startRot}deg)`;
+
+                // Add to DOM
+                digSite.appendChild(bone);
+
+                // Attach Drag Logic
+                makeDraggable(bone, part, slot);
+            });
+        }
+
+        // --- DIRT CANVAS LOGIC ---
+        function setupDirt() {
+            // Remove old canvas if exists to handle resize properly
+            const oldCanvas = document.getElementById('dirt-canvas');
+            if(oldCanvas) oldCanvas.remove();
+            
+            dirtCanvas = document.createElement('canvas');
+            dirtCanvas.id = 'dirt-canvas';
+            
+            // Ensure we use the computed style size
+            const rect = digSite.getBoundingClientRect();
+            dirtCanvas.width = rect.width;
+            dirtCanvas.height = rect.height;
+            
+            digSite.appendChild(dirtCanvas); 
+
+            ctx = dirtCanvas.getContext('2d');
+            
+            // Fill dirt
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = '#8b5a2b'; // Darker dirt
+            ctx.fillRect(0, 0, dirtCanvas.width, dirtCanvas.height);
+            
+            // Add texture dots
+            for(let i=0; i<500; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#6b4220' : '#a06e3d';
+                ctx.beginPath();
+                ctx.arc(Math.random()*dirtCanvas.width, Math.random()*dirtCanvas.height, Math.random()*3+1, 0, Math.PI*2);
+                ctx.fill();
+            }
+
+            // Brush Event Listeners
+            let isBrushing = false;
+
+            const startBrush = (e) => {
+                if (currentTool !== 'brush') return;
+                isBrushing = true;
+                brush(e);
+            };
+            const moveBrush = (e) => {
+                if (!isBrushing || currentTool !== 'brush') return;
+                brush(e);
+            };
+            const endBrush = () => isBrushing = false;
+
+            const brush = (e) => {
+                const rect = dirtCanvas.getBoundingClientRect();
+                const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+                const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+
+                ctx.globalCompositeOperation = 'destination-out'; // Erase mode
+                ctx.beginPath();
+                ctx.arc(x, y, 30, 0, Math.PI * 2); // Brush size
+                ctx.fill();
+            };
+
+            dirtCanvas.onmousedown = startBrush;
+            dirtCanvas.onmousemove = moveBrush;
+            document.onmouseup = endBrush;
+            
+            dirtCanvas.ontouchstart = startBrush;
+            dirtCanvas.ontouchmove = moveBrush;
+            document.ontouchend = endBrush;
+        }
+
+        // --- TOOLS LOGIC ---
+        function setTool(tool) {
+            currentTool = tool;
+            if (tool === 'brush') {
+                brushBtn.classList.add('active');
+                handBtn.classList.remove('active');
+                digSite.classList.add('tool-brush');
+                digSite.classList.remove('tool-hand');
+            } else {
+                handBtn.classList.add('active');
+                brushBtn.classList.remove('active');
+                digSite.classList.add('tool-hand');
+                digSite.classList.remove('tool-brush');
+            }
+        }
+
+        // --- DRAG & ROTATE LOGIC ---
+        function makeDraggable(el, partData, targetEl) {
+            let startX, startY, initialLeft, initialTop;
+
+            const onMove = (e) => {
+                if (draggedBone !== el) return;
+                e.preventDefault();
+                
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                const dx = clientX - startX;
+                const dy = clientY - startY;
+
+                el.style.left = (initialLeft + dx) + 'px';
+                el.style.top = (initialTop + dy) + 'px';
+            };
+
+            const onEnd = () => {
+                // Remove listeners immediately to prevent stickiness
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onEnd);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('touchend', onEnd);
+
+                if (draggedBone !== el) return;
+                
+                // Scale back down
+                let currentRot = parseFloat(el.dataset.rotation);
+                updateTransform(el, currentRot, 1.0);
+                
+                checkSnap(el, targetEl);
+                draggedBone = null;
+            };
+
+            const onStart = (e) => {
+                if (currentTool !== 'hand') return; // Only work in hand mode
+                if (el.classList.contains('placed')) return;
+
+                draggedBone = el; // Set global reference
+                
+                // Position logic
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                // Pop to game-area scope (reparenting)
+                const rect = el.getBoundingClientRect();
+                const gameRect = document.getElementById('game-area').getBoundingClientRect();
+                
+                if (el.parentElement === digSite) {
+                    document.getElementById('game-area').appendChild(el);
+                    el.style.left = (rect.left - gameRect.left) + 'px';
+                    el.style.top = (rect.top - gameRect.top) + 'px';
+                }
+
+                startX = clientX;
+                startY = clientY;
+                initialLeft = parseFloat(el.style.left);
+                initialTop = parseFloat(el.style.top);
+                
+                // Scale up visual
+                updateTransform(el, parseFloat(el.dataset.rotation), 1.1);
+                
+                // Attach movement listeners to DOCUMENT to catch fast movements
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onEnd);
+                document.addEventListener('touchmove', onMove, {passive: false});
+                document.addEventListener('touchend', onEnd);
+            };
+
+            el.addEventListener('mousedown', onStart);
+            el.addEventListener('touchstart', onStart, {passive: false});
+        }
+        
+        // --- ROTATION HANDLERS (Global) ---
+        window.addEventListener('keydown', (e) => {
+            if (!draggedBone) return;
+            let rot = parseFloat(draggedBone.dataset.rotation);
+            if (e.key === 'a' || e.key === 'ArrowLeft') rot -= 5;
+            if (e.key === 'd' || e.key === 'ArrowRight') rot += 5;
+            draggedBone.dataset.rotation = rot;
+            updateTransform(draggedBone, rot, 1.1);
+        });
+
+        window.addEventListener('wheel', (e) => {
+            if (!draggedBone) return;
+            let rot = parseFloat(draggedBone.dataset.rotation);
+            rot += (e.deltaY > 0 ? 5 : -5);
+            draggedBone.dataset.rotation = rot;
+            updateTransform(draggedBone, rot, 1.1);
+        });
+
+        function updateTransform(el, rot, scale) {
+            el.style.transform = `rotate(${rot}deg) scale(${scale})`;
+        }
+
+        // --- CHECK WIN ---
+        function checkSnap(bone, targetSlot) {
+            const bRect = bone.getBoundingClientRect();
+            const tRect = targetSlot.getBoundingClientRect();
+
+            // 1. Distance Check (Center to Center)
+            const bCX = bRect.left + bRect.width/2;
+            const bCY = bRect.top + bRect.height/2;
+            const tCX = tRect.left + tRect.width/2;
+            const tCY = tRect.top + tRect.height/2;
+            const dist = Math.hypot(bCX - tCX, bCY - tCY);
+
+            // 2. Rotation Check (Modulo 360)
+            let rot = parseFloat(bone.dataset.rotation) % 360;
+            if (rot < 0) rot += 360;
+            // Target is always 0 (upright)
+            // Distance from 0 or 360
+            const rotDiff = Math.min(rot, 360 - rot);
+
+            // LOGIC: Distance < 50px AND Rotation error < 15 deg
+            if (dist < 50 && rotDiff < 15) {
+                // Snap!
+                const gameRect = document.getElementById('game-area').getBoundingClientRect();
+                bone.style.left = (tRect.left - gameRect.left) + 'px';
+                bone.style.top = (tRect.top - gameRect.top) + 'px';
+                bone.style.transform = 'rotate(0deg)';
+                bone.classList.add('placed');
+                bone.style.cursor = 'default';
+                bone.style.filter = 'none'; // Looks like it's pressed into paper
+                
+                placedCount++;
+                if (placedCount === levels[currentLevelIdx].parts.length) {
+                    setTimeout(showWin, 500);
+                }
+            }
+        }
+
+        function showWin() {
+            const level = levels[currentLevelIdx];
+            document.getElementById('plaque-title').innerText = level.name;
+            document.getElementById('plaque-desc').innerText = level.desc;
+            document.getElementById('plaque-stats').innerHTML = level.stats;
+            // Inject visual
+            document.getElementById('plaque-visual').innerHTML = level.visual;
+            
+            const btn = document.getElementById('next-level-btn');
+            if (currentLevelIdx < levels.length - 1) {
+                btn.innerText = "Excavate Next Specimen";
+            } else {
+                btn.innerText = "Restart Exhibition";
+            }
+            
+            plaqueModal.style.display = 'flex';
+            fireConfetti();
+        }
+
+        function nextLevel() {
+            if (currentLevelIdx < levels.length - 1) {
+                initLevel(currentLevelIdx + 1);
+            } else {
+                initLevel(0);
+            }
+        }
+
+        function fireConfetti() {
+            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff'];
+            for(let i=0; i<50; i++) {
+                const conf = document.createElement('div');
+                conf.className = 'confetti';
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.top = '-10px';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                document.body.appendChild(conf);
+            }
+        }
+
+        // --- START GAME (WAIT FOR LOAD) ---
+        window.addEventListener('load', () => {
+             initLevel(0);
+        });
+        
+        // Handle Resize (Optional: Reloads level to fix positioning)
+        window.addEventListener('resize', () => {
+            // Debounce to prevent flashing
+            clearTimeout(window.resizeTimer);
+            window.resizeTimer = setTimeout(() => {
+                initLevel(currentLevelIdx);
+            }, 200);
+        });
+
+    </script>
+</body>
+</html>
