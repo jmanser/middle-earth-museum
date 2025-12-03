@@ -1,3 +1,60 @@
+<!--
+
+           Hello curious Progger!
+
+           Have fun exploring the code behind this little game. Gemini did most of it and did a pretty good job.
+
+           It's pure HTML/CSS/JS. No frameworks, no libraries!
+
+           It took 15-20 rounds of increasingly specific prompting, but the Gemini canvas feature made it super easy
+           to debug as we went.
+
+           Then I just tweaked some of the CSS for aesthetics and configured the levels.
+           
+           
+                                                                                                    
+                                                                                                    
+                                          .              .                                          
+                                    .------:.          .:------. .                                  
+                                 ..--:....:--:        .--:....:--..                                 
+                                ..--.:..+%+.:-.      .--.+%+....--..                                
+                                .:-::*..*%%-:----------:-%%*..+::-:.                                
+                                ..--.+%%%%*.:----------:.*%%%%*.--..                                
+                                ..:--.:--:.--------------.:--:.--:.                                 
+                               ..---------------------------------:.                                
+                              .:------------------------------------.                               
+                             .:--------------------------------------.                              
+                             .:--------------------------------------.                              
+                             .:--------------------------------------.                              
+                             .:-----==------------------------==-----.                              
+                              .-=-----==------+-----=------===----=-.                               
+                               ..-=------==================------=:.                                
+                                ..:===-----------------------===:..                                 
+                                   ..=====---------------======:                                    
+                                   .=+++===================++++=.                                   
+                                   -++++=-----:::::::------=++++-.                                  
+                                  .=+++=----...........:----=++++.                                  
+                                 .-+++=---:..-.:::::::...:---=+++-.                                 
+                         ..----:..=++=---:.:::.::-+:::::..:---=++=..::---..                         
+                         :-------==++=--:..::::---::-=:::.:---=++==-------:                         
+                         ------===+++=--.::.:::-:::--:.....:--==++===------                         
+                         :---=====+++=--....::-:...........:--==++=====---:                         
+                         .---=====+++=--.:::::+-::.:::.....:--=+++=====---.                         
+                         ..---=====++=--:..::::---:---::..:---=++=====---..                         
+                           .---====+++=--:....::-::--:-::.---=+++====---.                           
+                            .:--====+++=--::...::::::...:---=+++====--:.                            
+                           .:---=====+++=----:.......::----=+++=====---:.                           
+                          .---========+++++==----------==+++++========---.                          
+                         .:--==========+++==++--------++==+++==========--:.                         
+                         .............=+-=+-....::::....-+=-+=.............                         
+                                     :=+::==.          .=+::+=:                                     
+                                                             ..                                     
+                                                                                                    
+                                                                                                    
+                                                                                                    
+
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,7 +67,7 @@
         body {
             margin: 0;
             padding: 0;
-            background-color: #f4e4bc; /* Parchment color */
+            background-color: #f4e4bc;
             font-family: 'Courier New', Courier, monospace;
             color: #3e3e3e;
             display: flex;
@@ -104,7 +161,7 @@
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            z-index: 50; /* Above bones when they are 'hidden' inside dig-site */
+            z-index: 50;
             cursor: crosshair;
             touch-action: none;
         }
@@ -151,7 +208,6 @@
         .bone {
             position: absolute;
             cursor: grab;
-            /* Reverted shadow to simple clean drop shadow */
             filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.2));
             transition: transform 0.1s linear; 
             z-index: 10;
@@ -169,7 +225,6 @@
             filter: drop-shadow(4px 4px 0px rgba(0,0,0,0.2));
         }
         
-        /* Reverted colors to clean museum style */
         .bone svg {
             width: 100%;
             height: 100%;
@@ -354,7 +409,7 @@
         </div>
     </div>
 
-    <!-- THE REWARD MODAL (Museum Case) -->
+    <!-- PLAQUE/REWARD -->
     <div id="plaque-modal">
         <div id="museum-case">
             <div id="display-window">
@@ -372,7 +427,7 @@
     </div>
 
     <script>
-        // --- DATA: CREATURES ---
+        // --- LEVELS ---
         const levels = [
             {
                 name: "Smaugus terribilis",
@@ -760,7 +815,7 @@
             if (currentLevelIdx >= levels.length - 1) {
                 btn.innerText = "Restart Exhibition";
             } 
-            // 2. If the NEXT level is the Bonus Round -> Special Text
+            // 2. If the NEXT level is Señor Prog 
             else if (levels[currentLevelIdx + 1].name.includes("PROG")) {
                 btn.innerText = "Excavate BONUS ROUND!";
             } 
