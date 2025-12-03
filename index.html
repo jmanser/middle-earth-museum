@@ -9,7 +9,7 @@
            It took 15-20 rounds of increasingly specific prompting, but the Gemini canvas feature made it super easy
            to debug as we went.
 
-           Then I just tweaked some of the CSS for aesthetics and configured the levels.
+           Then I just tweaked some of the CSS for aesthetics, configured the levels, added a welcome message, etc.
            
            
                                                                                                     
@@ -363,6 +363,20 @@
             font-weight: bold;
             width: 100%;
         }
+        /* Welcome message */
+        #welcome-modal {
+            display: flex;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 5000;
+        }
+        #welcome-modal #museum-case {
+            min-height: auto;
+            max-width: 500px;
+        }
         .modal-btn:hover { background: #555; }
         .confetti {
             position: absolute;
@@ -408,7 +422,29 @@
             <div class="label">ASSEMBLY MOUNT</div>
         </div>
     </div>
-
+    <!-- Welcome plaque -->
+    <div id="welcome-modal">
+        <div id="museum-case">
+            <div id="display-window" style="height: 100px;">
+               <div style="color: #f4e4bc; font-size: 3rem; opacity: 0.5;">⚒️</div>
+            </div>     
+            <div id="plaque-info">
+                <h2 id="plaque-title" style="font-size: 1.5rem;">Middle Earth Excavation Mission</h2>
+                <p id="plaque-desc">
+                    Welcome, Dr. Garretty! We have detected ancient signatures beneath the (middle) earth and need your help excavating them.
+                    <br><br>
+                    <strong>MISSION PROTOCOLS:</strong>
+                </p>
+                <div style="text-align: left; margin: 0 auto 1.5rem auto; display: inline-block; font-family: 'Courier New', Courier, monospace; font-size: 0.9rem; color: #555;">
+                    1. Select ⛏️ <b>BRUSH</b> to clear dirt.<br>
+                    2. Select ✋ <b>HAND</b> to drag bones.<br>
+                    3. Press <b>A / D</b> to rotate.<br>
+                    4. Match bones to the assembly mount so the skeletons can be displayed in the Middle Earth Museum of Natural History.
+                </div>
+                <button class="modal-btn" onclick="closeWelcome()">BEGIN EXCAVATION!</button>
+            </div>
+        </div>
+    </div>
     <!-- PLAQUE/REWARD -->
     <div id="plaque-modal">
         <div id="museum-case">
@@ -510,6 +546,11 @@
                 ]
             }
         ];
+        
+        // Close welcome modal
+        function closeWelcome() {
+            document.getElementById('welcome-modal').style.display = 'none';
+        }
 
         // --- STATE ---
         let currentLevelIdx = 0;
