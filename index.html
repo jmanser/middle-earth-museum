@@ -824,10 +824,11 @@
 
         function showWin() {
             const level = levels[currentLevelIdx];
-            document.getElementById('plaque-title').innerText = level.name;
-            document.getElementById('plaque-desc').innerText = level.desc;
-            document.getElementById('plaque-stats').innerHTML = level.stats;
-            document.getElementById('creature-image').src = level.imgUrl;
+            
+            document.querySelector('#plaque-modal #plaque-title').innerText = level.name;
+            document.querySelector('#plaque-modal #plaque-desc').innerText = level.desc;
+            document.querySelector('#plaque-modal #plaque-stats').innerHTML = level.stats;
+            document.querySelector('#plaque-modal #creature-image').src = level.imgUrl;
             
             const container = document.getElementById('skeleton-3d-container');
             container.innerHTML = ''; 
